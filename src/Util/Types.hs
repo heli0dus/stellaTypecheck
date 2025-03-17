@@ -24,6 +24,8 @@ data TypingError =
     | ERROR_DUPLICATE_RECORD_TYPE_FIELDS Type
     | ERROR_UNEXPECTED_LIST Expr Type
     | ERROR_AMBIGUOUS_LIST Expr
+    | ERROR_ABBIGUOUS_SUM_TYPE Expr
+    | ERROR_UNEXPECTED_VARIANT Expr Type
     | Uncategorized String
     deriving Show
 type TypeCheckResult = Either TypingError ()

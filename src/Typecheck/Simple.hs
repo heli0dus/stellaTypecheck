@@ -168,8 +168,17 @@ checkExpr exts ctx ty expr = case expr of
         guardWithError (typ == ty) $ ERROR_UNMATCHED_TYPES ty typ expr
 
     -- sum types
-    Inl _ -> undefined
-    Inr _ -> undefined
+    Inl x -> do
+        requireExt exts (ExtensionName "sum-types")
+        case ty of
+            TypeSum lty _ -> checkExpr exts ctx lty x
+            _ -> Left $ ERROR_UNEXPECTED_TYPE_FOR_EXPRESSION ty expr
+    Inr x -> do
+        requireExt exts (ExtensionName "sum-types")
+        case ty of
+            TypeSum _ rty -> checkExpr exts ctx rty x
+            _ -> Left $ ERROR_UNEXPECTED_TYPE_FOR_EXPRESSION ty expr
+            
     Match e cases -> undefined
 
     -- lists
@@ -305,8 +314,12 @@ inferExpr exts ctx expr = case expr of
         pure typ
 
     -- sum types
-    Inl _ -> undefined
-    Inr _ -> undefined
+    Inl _ -> do
+        requireExt exts (ExtensionName "sum-types")
+        Left $ ERROR_ABBIGUOUS_SUM_TYPE expr
+    Inr _ -> do
+        requireExt exts (ExtensionName "sum-types")
+        Left $ ERROR_ABBIGUOUS_SUM_TYPE expr
     Match e cases -> undefined
 
     -- lists

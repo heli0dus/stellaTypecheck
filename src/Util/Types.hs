@@ -23,6 +23,7 @@ data TypingError =
     | ERROR_DUPLICATE_RECORD_FIELDS Expr
     | ERROR_DUPLICATE_RECORD_TYPE_FIELDS Type
     | ERROR_UNEXPECTED_LIST Expr Type
+    | ERROR_AMBIGUOUS_LIST Expr
     | Uncategorized String
     deriving Show
 type TypeCheckResult = Either TypingError ()

@@ -4,6 +4,7 @@ import Stella.Abs
 import Util.Types
 import qualified Data.Map as Map
 import qualified Data.Set as Set
+import GHC.Float (expts)
 
 guardWithError :: Bool -> b -> Either b ()
 guardWithError cond err = if cond then Right () else Left err
@@ -175,16 +176,27 @@ checkExpr exts ctx ty expr = case expr of
     List elems -> do
         requireExt exts (ExtensionName "lists")
         case ty of
-            TypeList elemType -> undefined
+            TypeList elemType -> foldl (\pr cur -> pr >> checkExpr exts ctx elemType cur) (pure ()) elems
             _ -> Left $ ERROR_UNEXPECTED_LIST expr ty
     ConsList x xs -> do
         requireExt exts (ExtensionName "lists")
-    Head _ -> do
+        case ty of
+            TypeList elemType -> do
+                checkExpr exts ctx elemType x
+                checkExpr exts ctx ty xs
+            _ -> Left $ ERROR_UNEXPECTED_LIST expr ty
+    Head xs -> do
         requireExt exts (ExtensionName "lists")
-    Tail _ -> do
+        checkExpr exts ctx (TypeList ty) xs
+    Tail xs -> do
         requireExt exts (ExtensionName "lists")
-    IsEmpty _ -> do
+        checkExpr exts ctx ty xs
+    IsEmpty xs -> do
         requireExt exts (ExtensionName "lists")
+        xstyp <- inferExpr exts ctx xs
+        case xstyp of
+            TypeList _ -> guardWithError (ty == TypeBool) $ ERROR_UNMATCHED_TYPES ty xstyp expr
+            _ -> Left $ ERROR_NOT_A_LIST xs
 
     --natural literals
     ConstInt _ -> do
@@ -293,12 +305,37 @@ inferExpr exts ctx expr = case expr of
     Match e cases -> undefined
 
     -- lists
-    List exs -> undefined
-
-    ConsList _ _ -> undefined
-    Head _ -> undefined
-    Tail _ -> undefined
-    IsEmpty _ -> undefined
+    List exs -> do
+        requireExt exts (ExtensionName "lists")
+        case exs of
+            [] -> Left $ ERROR_AMBIGUOUS_LIST expr
+            (x : xs) -> do
+                xty <- inferExpr exts ctx x
+                foldl (\pr cur -> pr >> checkExpr exts ctx xty cur) (pure ()) xs
+                pure xty
+    ConsList x xs -> do
+        requireExt exts (ExtensionName "lists")
+        xty <- inferExpr exts ctx x
+        checkExpr exts ctx (TypeList xty) xs
+        pure xty
+    Head xs -> do
+        requireExt exts (ExtensionName "lists")
+        xsty <- inferExpr exts ctx xs
+        case xsty of
+            TypeList elemType -> pure elemType
+            _ -> Left $ ERROR_NOT_A_LIST xs
+    Tail xs -> do
+        requireExt exts (ExtensionName "lists")
+        xsty <- inferExpr exts ctx xs
+        case xsty of
+            TypeList _ -> pure xsty
+            _ -> Left $ ERROR_NOT_A_LIST xs
+    IsEmpty xs -> do
+        requireExt exts (ExtensionName "lists")
+        xstyp <- inferExpr exts ctx xs
+        case xstyp of
+            TypeList _ -> pure TypeBool
+            _ -> Left $ ERROR_NOT_A_LIST xs
 
     --natural literals
     ConstInt _ -> do

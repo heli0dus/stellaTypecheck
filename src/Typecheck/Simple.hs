@@ -198,6 +198,11 @@ checkExpr exts ctx ty expr = case expr of
             TypeList _ -> guardWithError (ty == TypeBool) $ ERROR_UNMATCHED_TYPES ty xstyp expr
             _ -> Left $ ERROR_NOT_A_LIST xs
 
+    --fixpoint combinator
+    Fix f -> do
+        requireExt exts (ExtensionName "fixpoint-combinator")
+        checkExpr exts ctx (TypeFun [ty] ty) f
+
     --natural literals
     ConstInt _ -> do
         requireExt exts (ExtensionName "natural-literals")
@@ -336,6 +341,15 @@ inferExpr exts ctx expr = case expr of
         case xstyp of
             TypeList _ -> pure TypeBool
             _ -> Left $ ERROR_NOT_A_LIST xs
+
+
+    --fixpoint combinator
+    Fix f -> do
+        requireExt exts (ExtensionName "fixpoint-combinator")
+        fty <- inferExpr exts ctx f
+        case fty of
+            TypeFun [t] t' | t == t' -> pure t
+            _ -> Left $ ERROR_UNEXPECTED_TYPE_FOR_EXPRESSION fty f
 
     --natural literals
     ConstInt _ -> do

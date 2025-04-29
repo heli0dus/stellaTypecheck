@@ -5,6 +5,7 @@ import Util.Types
 import qualified Data.Map as Map
 import qualified Data.Set as Set
 import GHC.Float (expts)
+import Stella.Par (pMatchCase)
 
 guardWithError :: Bool -> b -> Either b ()
 guardWithError cond err = if cond then Right () else Left err
@@ -105,7 +106,7 @@ checkExpr exts ctx ty expr = case expr of
                 requireExt exts (ExtensionName "tuples")
         case ty of
             TypeTuple tys -> do
-                guardWithError (length exs == length tys) $ ERROR_UNEXPECTED_TYPE_FOR_EXPRESSION ty expr
+                guardWithError (length exs == length tys) $ ERROR_UNEXPECTED_TUPLE_LENGTH
                 foldl (>>) (pure ()) $ checkExpr exts ctx <$> tys <*> exs
             _ -> Left $ ERROR_UNEXPECTED_TUPLE expr
 
@@ -149,7 +150,7 @@ checkExpr exts ctx ty expr = case expr of
             TypeRecord tybinds -> let
                 typmap = Map.fromList $ (\(ARecordFieldType idt typ) -> (idt, typ)) <$> tybinds
                 in maybe
-                    (Left $ ERROR_MISSING_RECORD_FIELDS record rectyp [ident])
+                    (Left $ ERROR_UNEXPECTED_FIELD_ACCESS)
                     (\typ -> guardWithError (ty == typ) $ ERROR_UNMATCHED_TYPES ty typ expr)
                     (typmap Map.!? ident)
             _ -> Left $ ERROR_NOT_A_RECORD record
@@ -172,14 +173,37 @@ checkExpr exts ctx ty expr = case expr of
         requireExt exts (ExtensionName "sum-types")
         case ty of
             TypeSum lty _ -> checkExpr exts ctx lty x
-            _ -> Left $ ERROR_UNEXPECTED_TYPE_FOR_EXPRESSION ty expr
+            _ -> Left $ ERROR_UNEXPECTED_INJECTION expr ty
     Inr x -> do
         requireExt exts (ExtensionName "sum-types")
         case ty of
             TypeSum _ rty -> checkExpr exts ctx rty x
-            _ -> Left $ ERROR_UNEXPECTED_TYPE_FOR_EXPRESSION ty expr
-            
-    Match e cases -> undefined
+            _ -> Left $ ERROR_UNEXPECTED_INJECTION expr ty
+
+    -- variant types
+    -- Здесь что-то будет, но видимо потом
+    Variant label ex -> case ty of
+        TypeVariant flds -> do
+            guardWithError (label `Map.member` variantFieldsToMap flds) $ ERROR_UNEXPECTED_VARIANT_LABEL
+        _  -> Left $ ERROR_UNEXPECTED_VARIANT expr ty
+        where
+            variantFieldsToMap flds = Map.fromList $ (\(AVariantFieldType idt typ) -> (idt, typ)) <$> flds
+
+    Match e cases -> do
+        requireOneOf exts [ExtensionName "sum-types", ExtensionName "variants"]
+        ety <- inferExpr exts ctx e
+        case ety of
+            TypeSum lty rty -> checkSumCases exts ctx lty rty ty cases
+            TypeVariant flds -> undefined
+            _ -> Left $ Uncategorized "Unsupported"
+        where
+            checkSumCases :: [ExtensionName] -> TypingContext -> Type -> Type -> Type -> [MatchCase] -> TypeCheckResult
+            checkSumCases exts ctx lty rty target = \case
+                [AMatchCase (PatternInl (PatternVar idt)) exl,  AMatchCase (PatternInr (PatternVar idt')) exr] -> do
+                    checkExpr exts (Map.insert idt lty ctx) target exl
+                    checkExpr exts (Map.insert idt' rty ctx) target exr
+                _ -> undefined
+
 
     -- lists
     List elems -> do
@@ -316,11 +340,18 @@ inferExpr exts ctx expr = case expr of
     -- sum types
     Inl _ -> do
         requireExt exts (ExtensionName "sum-types")
-        Left $ ERROR_ABBIGUOUS_SUM_TYPE expr
+        Left $ ERROR_AMBIGUOUS_SUM_TYPE expr
     Inr _ -> do
         requireExt exts (ExtensionName "sum-types")
-        Left $ ERROR_ABBIGUOUS_SUM_TYPE expr
+        Left $ ERROR_AMBIGUOUS_SUM_TYPE expr
+
+    -- variant types
+    -- Здесь что-то будет, но видимо потом
+    Variant label ex -> Left $ ERROR_AMBIGUOUS_VARIANT_TYPE
+
     Match e cases -> undefined
+
+
 
     -- lists
     List exs -> do

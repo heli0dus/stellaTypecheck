@@ -60,6 +60,79 @@ exitError err = case err of
   ERROR_MISSING_MAIN -> do
     print "ERROR_MISSING_MAIN: main function is missing\n"
     exitWith $ ExitFailure 1
+  ERROR_UNDEFINED_VARIABLE var -> do
+    print $ "ERROR_UNDEFINED_VARIABLE: " <> show var <> "\n"
+    exitWith $ ExitFailure 2
+  ERROR_UNEXPECTED_TYPE_FOR_EXPRESSION ty ex -> do
+    print $ "ERROR_UNEXPECTED_TYPE_FOR_EXPRESSION\n"
+    exitWith $ ExitFailure 3
+  ERROR_UNMATCHED_TYPES ty1 ty2 ex -> do
+    print $ "ERROR_UNMATCHED_TYPES\n"
+    exitWith $ ExitFailure 3
+  ERROR_NOT_A_FUNCTION ex -> do
+    print "ERROR_NOT_A_FUNCTION\n"
+    exitWith $ ExitFailure 4
+  ERROR_NOT_A_TUPLE ex -> do
+    print "ERROR_NOT_A_TUPLE\n"
+    exitWith $ ExitFailure 5
+  ERROR_NOT_A_RECORD ex -> do
+    print "ERROR_NOT_A_RECORD\n"
+    exitWith $ ExitFailure 6
+  ERROR_NOT_A_LIST ex -> do
+    print "ERROR_NOT_A_LIST\n"
+    exitWith $ ExitFailure 7    
+  ERROR_UNEXPECTED_LAMBDA ex -> do
+    print "ERROR_UNEXPECTED_LAMBDA\n"
+    exitWith $ ExitFailure 8    
+  ERROR_UNEXPECTED_TYPE_FOR_PARAMETER {} -> do
+    print "ERROR_UNEXPECTED_TYPE_FOR_PARAMETER\n"
+    exitWith $ ExitFailure 9
+  ERROR_UNEXPECTED_TUPLE ex -> do
+    print "ERROR_UNEXPECTED_TUPLE\n"
+    exitWith $ ExitFailure 10
+  ERROR_UNEXPECTED_RECORD {} -> do
+    print "ERROR_UNEXPECTED_RECORD\n"
+    exitWith $ ExitFailure 11
+  ERROR_UNEXPECTED_VARIANT {} -> do
+    print "ERROR_UNEXPECTED_VARIANT\n"
+    exitWith $ ExitFailure 12
+  ERROR_UNEXPECTED_LIST {} -> do
+    print "ERROR_UNEXPECTED_LIST\n"
+    exitWith $ ExitFailure 13
+  ERROR_UNEXPECTED_INJECTION {} -> do
+    print "ERROR_UNEXPECTED_INJECTION\n"
+    exitWith $ ExitFailure 14
+  ERROR_MISSING_RECORD_FIELDS {} -> do
+    print "ERROR_MISSING_RECORD_FIELDS\n"
+    exitWith $ ExitFailure 15
+  ERROR_UNEXPECTED_RECORD_FIELDS {} -> do
+    print "ERROR_UNEXPECTED_RECORD_FIELDS\n"
+    exitWith $ ExitFailure 16
+  ERROR_UNEXPECTED_FIELD_ACCESS -> do
+    print "ERROR_UNEXPECTED_FIELD_ACCESS\n"
+    exitWith $ ExitFailure 17
+  ERROR_UNEXPECTED_VARIANT_LABEL -> do
+    print "ERROR_UNEXPECTED_VARIANT_LABEL\n"
+    exitWith $ ExitFailure 18
+  ERROR_TUPLE_INDEX_OUT_OF_BOUNDS {} -> do
+    print "ERROR_TUPLE_INDEX_OUT_OF_BOUNDS\n"
+    exitWith $ ExitFailure 19
+  ERROR_UNEXPECTED_TUPLE_LENGTH -> do
+    print "ERROR_UNEXPECTED_TUPLE_LENGTH\n"
+    exitWith $ ExitFailure 20
+  ERROR_AMBIGUOUS_SUM_TYPE {} -> do
+    print "ERROR_AMBIGUOUS_SUM_TYPE\n"
+    exitWith $ ExitFailure 21
+  -- добавить
+  ERROR_AMBIGUOUS_VARIANT_TYPE -> do
+    print "ERROR_AMBIGUOUS_VARIANT_TYPE\n"
+    exitWith $ ExitFailure 22
+  ERROR_AMBIGUOUS_LIST {} -> do
+    print "ERROR_AMBIGUOUS_LIST\n"
+    exitWith $ ExitFailure 23
+  
+  
+
   x -> do
     print $ "Some unknown error occured\n" <> show x <> "\n"
     exitFailure
